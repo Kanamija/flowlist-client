@@ -15,30 +15,79 @@ type ClassEvent = {
 
 function App() {
   const [classes, setClasses] = useState<ClassEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadClasses() {
-      const res = await fetch("/api/classes");
-      const data = await res.json();
-      setClasses(data.classes);
+      try {
+        const res = await fetch("/api/classes");
+
+        if (!res.ok) {
+          throw new Error("Failed to load classes");
+        }
+
+        const data = await res.json();
+
+        const sortedClasses = [...data.classes].sort(
+          (a: ClassEvent, b: ClassEvent) =>
+            new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+        );
+
+        setClasses(sortedClasses);
+      } catch {
+        setError("Could not load classes");
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadClasses();
   }, []);
 
+  if (isLoading) {
+    return <p>Loading classes...</p>;
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
+
+  if (classes.length === 0) {
+    return <p>No upcoming classes.</p>;
+  }
+
   return (
-    <div>
-      <h1>Upcoming Classes</h1>
-      <ul>
+    <main className="app-shell">
+      <header className="page-header">
+        <p className="eyebrow">FlowList</p>
+        <h1>Upcoming Classes</h1>
+        <p className="intro">
+          Browse the studio schedule and find your next class.
+        </p>
+      </header>
+      <section className="class-list" aria-label="Upcoming yoga classes">
         {classes.map((cls) => (
-          <li key={cls.id}>
-            <strong>{cls.name}</strong> with {cls.instructor}
-            <br />
-            {new Date(cls.starts_at).toLocaleString()} · {cls.duration_minutes}{" "}
-            min
-          </li>
+          <article className="class-card" key={cls.id}>
+            <div>
+              <h2>{cls.name}</h2>
+              <p className="instructor">with {cls.instructor}</p>
+            </div>
+
+            <p className="class-time">
+              {new Date(cls.starts_at).toLocaleString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+
+            <p className="class-meta">{cls.duration_minutes} min</p>
+          </article>
         ))}
-      </ul>
-    </div>
+      </section>
+    </main>
   );
 }
 
