@@ -1,73 +1,83 @@
-# React + TypeScript + Vite
+# FlowList Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend for **FlowList** — a scheduling app for a yoga studio. Students can browse the class schedule, log in, sign up for classes, and cancel their own bookings. Studio admins manage the schedule directly through the Supabase dashboard.
 
-Currently, two official plugins are available:
+> The backend lives in [`flowlist-api`](../flowlist-api) — Express + TypeScript + Supabase.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it is
 
-## React Compiler
+Yoga studios often manage class sign-ups informally — paper sheets, group chats, "first come first served" with no real source of truth. The result: double bookings, missed cancellations, and admin headaches.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+FlowList is the single source of truth for the class schedule and bookings. This repo is the React app students actually see:
 
-## Expanding the ESLint configuration
+- A **public schedule page** anyone can browse without logging in
+- **Login / register UI** for students who want to book
+- **Booking and cancellation UI** with their own "My bookings" view
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## How it works
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+Schedule page (public, single page)
+        ↓
+GET /api/classes  →  list of upcoming classes
+        ↓
+Student logs in / registers  →  session cookie set by the API
+        ↓
+"Book" button on each class  →  POST /api/bookings
+        ↓
+"My bookings" view  →  cancel a booking when needed
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Architecture highlights
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **UTC over the wire, localized in the browser.** The API returns `starts_at` as a UTC `timestamptz`; the client converts with `toLocaleString` so every student sees their own zone. No date library needed for the MVP.
+- **Session cookies, not tokens.** Auth uses session cookies set by the API — no `localStorage`, no token plumbing on the client. Auth-relevant fetches use `credentials: "include"`.
+- **No state library, no router, no UI kit (yet).** v1 is one page; libraries get added when there's a concrete second use case for them.
+- **Loading and error states are part of "done."** No silent blank screens while a fetch is in flight.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Tech stack
+
+**Frontend (this repo)**
+- React + Vite + TypeScript
+- ESLint
+- Plain CSS / CSS modules (no UI library)
+
+**Backend (separate repo)**
+- Node.js + Express + TypeScript + Supabase
+
+## Status
+
+In active development. Shipping in three discrete versions, each end-to-end before the next:
+
+- **v1 — Public class schedule (no auth, no booking).** ← in progress
+- **v2 — Authentication UI** (register, login, logout, "logged in as X" indicator)
+- **v3 — Booking UI** ("Book" button per class, "My bookings" with cancel)
+
+"Done" for each version means opening the page in a browser and using the new feature for real.
+
+## Project structure
+
 ```
+src/
+  App.tsx          # currently the default Vite scaffold; v1 schedule page lives here next
+  main.tsx         # React entry point
+  assets/          # static assets
+public/            # files served verbatim by Vite
+AGENTS.md          # guidance for AI assistants working in this repo
+CONTRIBUTING.md    # commit format, PR template, code-comment conventions
+PROJECT_BRIEF.md   # product brief, MVP success criteria, stretch features
+index.html         # Vite HTML entry
+vite.config.ts     # Vite config
+```
+
+## Configuration
+
+The backend base URL is read from `import.meta.env.VITE_API_URL`. Set it in `.env.local` for development, e.g.:
+
+```
+VITE_API_URL=http://localhost:3000
+```
+
+## Author
+
+Built by Kanami Anderson.
