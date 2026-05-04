@@ -97,3 +97,11 @@
     width: fit-content;
   }
 }
+
+.page-header h1 {
+  font-weight: 500;
+}
+
+.class-card h2 {
+  font-weight: 500;
+}
