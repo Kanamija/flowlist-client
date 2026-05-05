@@ -31,7 +31,7 @@ Student logs in / registers  →  session cookie set by the API
 ## Architecture highlights
 
 - **UTC over the wire, localized in the browser.** The API returns `starts_at` as a UTC `timestamptz`; the client converts with `toLocaleString` so every student sees their own zone. No date library needed for the MVP.
-- **Session cookies, not tokens.** Auth uses session cookies set by the API — no `localStorage`, no token plumbing on the client. Auth-relevant fetches use `credentials: "include"`.
+- **Session cookies, not tokens.** Auth uses session cookies set by the API — no `localStorage`, no token plumbing on the client. In dev, `/api/*` goes through the Vite proxy, and auth-relevant fetches use `credentials: "include"`.
 - **No state library, no router, no UI kit (yet).** v1 is one page; libraries get added when there's a concrete second use case for them.
 - **Loading and error states are part of "done."** No silent blank screens while a fetch is in flight.
 
