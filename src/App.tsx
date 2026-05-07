@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 type ClassEvent = {
@@ -28,6 +28,12 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [registerError, setRegisterError] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+
+  //useEffect runs automatically in response to something changing
+  //loadClasses loads classes when the page first opens
+  //loadUser checks if the user is already logged in
 
   useEffect(() => {
     async function loadClasses() {
@@ -82,7 +88,9 @@ function App() {
     return <p>No upcoming classes.</p>;
   }
 
-  async function handleRegisterSubmit(e: React.FormEvent) {
+  //hander functions run only when the user does something - clicks a button, submits a form, types in a field etc...
+
+  async function handleRegisterSubmit(e: SubmitEvent) {
     e.preventDefault();
     setRegisterError("");
 
@@ -108,6 +116,26 @@ function App() {
       credentials: "include",
     });
     setUser(null);
+  }
+
+  async function handleLoginSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    setRegisterError("");
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setUser(data.user);
+    } else {
+      setLoginError(data.error);
+    }
   }
 
   return (
