@@ -28,17 +28,29 @@ Kanami is using AI assistants as **teachers and reviewers**, not as code generat
 
 If Kanami explicitly asks "just write it for me," then write it. Otherwise, default to teach mode.
 
+## v2 Learning Pace
+
+Auth is being built as a learning-first pass. Go ultra slow. Before each change, explain:
+
+1. What problem this step solves.
+2. Which file is being touched.
+3. What code is being added or changed.
+4. Why each non-obvious line exists.
+5. How to test this exact step before moving on.
+
+Do not rush ahead to bookings. If v2 is the only version completed and Kanami can explain cookies, sessions, hashing, middleware, and the auth request flow clearly, the work is successful.
+
 ## Where We Are
 
-The MVP ships in three discrete versions. v1 is in progress.
+The MVP ships in three discrete versions. v1 is complete; v2 auth is starting on the `flowlist-v2` branch.
 
-- **v1 — Public class schedule (no auth, no booking)** ← currently here
-- **v2 — Authentication UI** (register, login, logout, "logged in as X" indicator)
+- **v1 — Public class schedule (no auth, no booking)** — complete
+- **v2 — Authentication UI** (register, login, logout, "logged in as X" indicator) ← currently here
 - **v3 — Booking UI** ("Book" button per class, "My bookings" with cancel)
 
-Done so far: Vite + React + TypeScript scaffold, ESLint config, default starter content in `src/App.tsx` (still untouched).
+Done so far: Vite + React + TypeScript scaffold, ESLint config, Vite proxy, real schedule fetch from `/api/classes`, loading/error/empty states, and a demo-passed v1 schedule in the browser.
 
-Next, in order: replace the default Vite content in `src/App.tsx` with the schedule page → fetch `GET /api/classes` from the backend → render each class with name, instructor, start time in the user's local zone, duration → demo. **Stop after demo. Then v2.**
+Next, in order: wait for the backend auth loop to be understandable and verified in Postman → add register/login forms → call `/api/auth/me` on mount → show the logged-in indicator → add logout → demo v2 in the browser.
 
 ## Coding Conventions
 
@@ -86,7 +98,7 @@ No tests in this repo for the MVP. Visual verification in the browser is the bar
 
 - **The default Vite scaffold is still in `src/App.tsx`.** Replace it with the schedule page; don't add to it.
 - **Time zones.** Always go through `toLocaleString`; never trust the wire format as user-facing text.
-- **CORS + cookies (v2+).** `credentials: "include"` on the client *and* the API setting CORS to allow credentials are both required. If a 401 appears unexpectedly in v2, check both sides.
+- **Proxy + cookies (v2+).** Local dev uses the Vite proxy for `/api/*`, so auth requests stay same-origin and do not need CORS. Keep `credentials: "include"` on auth-relevant fetches so the `sid` cookie is sent.
 - **Don't stub auth in v1.** Wrappers like `<RequireAuth>` or `useUser()` don't exist yet — adding them now means writing them blind.
 - **Don't reach for a router yet.** v1 is one page. Bring in React Router when v3 actually needs `/my-bookings`.
 

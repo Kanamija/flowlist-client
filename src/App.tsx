@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 type ClassEvent = {
@@ -13,10 +13,21 @@ type ClassEvent = {
   is_cancelled: boolean;
 };
 
+type User = {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+};
+
 function App() {
   const [classes, setClasses] = useState<ClassEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [registerError, setRegisterError] = useState("");
 
   useEffect(() => {
     async function loadClasses() {
@@ -44,6 +55,21 @@ function App() {
     loadClasses();
   }, []);
 
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to fetch /me", error);
+      }
+    }
+    loadUser();
+  }, []);
+
   if (isLoading) {
     return <p>Loading classes...</p>;
   }
@@ -56,6 +82,34 @@ function App() {
     return <p>No upcoming classes.</p>;
   }
 
+  async function handleRegisterSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setRegisterError("");
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setUser(data.user);
+    } else {
+      setRegisterError(data.error);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+  }
+
   return (
     <main className="app-shell">
       <header className="page-header">
@@ -64,6 +118,31 @@ function App() {
         <p className="intro">
           Browse the studio schedule and find your next class.
         </p>
+        {user ? (
+          <div>
+            <p>Logged in as {user.email}</p>
+            <button onClick={handleLogout}>Log out</button>
+          </div>
+        ) : (
+          <form onSubmit={handleRegisterSubmit}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="submit">Register</button>
+            {registerError && <p>{registerError}</p>}
+          </form>
+        )}
       </header>
       <section className="class-list" aria-label="Upcoming yoga classes">
         {classes.map((cls) => (
