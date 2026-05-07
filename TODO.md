@@ -4,17 +4,15 @@ Single source of truth for what's left on FlowList. Covers both repos. Keep this
 
 ## Status
 
-**Today is actually May 6th, we ran out of usage and couldn't update this file. When we begin again on May 7th we will have to review all the files and update the TODO file. The last thing we did was add the code to create a login form in App.tsx, but I just copied and pasted the whole thing and do not understand it very well. Tomorrow (the 7th) I want to review every line of code until I understand it well. We were also supposed to wire the logout button and test the loop in the browser end to end but did not get to that. That will be the first thing we do tomorrow.
-**Today:** Tuesday, May 5, 2026
+**Today:** Thursday, May 7, 2026
 **MVP target:** ~Saturday, May 9, 2026
-**Travel:\*\* mid-week, 2–3 working days lost. Plan accordingly — front-load v1 this weekend, push v2 immediately after, save the demo polish for the end of the week.
+**Travel:** mid-week, 2–3 working days lost. Plan accordingly — front-load v1 this weekend, push v2 immediately after, save the demo polish for the end of the week.
 
 **The staging rule still wins.** If a v2 task feels tempting before v1 is demo-done in the browser, stop. The whole point of staging is that "almost done" doesn't count.
 
 ### End-of-day — Tuesday, May 5
 
 **Done today:**
-
 - Walked through `POST /api/auth/register` line-by-line — every piece now makes sense (parameterized queries, `RETURNING`, `result.rows[0]`, `httpOnly`, why we hash, why 201, what `next(error)` does, etc.). Confident enough to teach it back.
 - **Refactored `/register`** into three small same-file helpers — `validateRegistration`, `createUser`, `createSession`. The route handler is now ~10 lines of orchestration that reads top-to-bottom.
   - Replaced the awkward `NOW() + ($2 || ' days')::interval` SQL with a JS-computed `expiresAt` `Date` passed as a normal parameter — much cleaner.
@@ -31,108 +29,104 @@ Single source of truth for what's left on FlowList. Covers both repos. Keep this
 - Added 3 login tests (wrong password → 401, non-existent email → 401, happy path → 200 + `Set-Cookie`). All 7 tests in `auth.test.ts` green.
 - Walked through every line of those 3 tests — `it`, `request(app)`, `.send`, `toBe` vs `toEqual` vs `toMatchObject`, why `afterEach` matters, the arrange/act/assert pattern.
 
-**Uncommitted at end of day:** the login route + login tests in `src/routes/auth.ts` and `src/tests/auth.test.ts`. First thing tomorrow: commit + push (see Step 1 below).
+**Uncommitted at end of day:** the login route + login tests in `src/routes/auth.ts` and `src/tests/auth.test.ts`. First thing tomorrow: commit + push (see Wednesday's plan below).
 
-**Tomorrow (Wednesday, May 6) — clear plan**
+### End-of-day — Wednesday, May 6
 
-**Goal of the day:** finish the v2 backend auth loop. Add `POST /api/auth/logout` so all four routes (register, login, me, logout) are green in Vitest, then add an end-to-end test that walks register → `/me` → logout → `/me`-returns-401 to prove the whole loop fits together.
+**Done today:**
 
-**Definition of done for tomorrow:** all four auth routes implemented and tested, end-to-end test passing, all changes committed and pushed on `flowlist-v2`. If travel eats into the day, ship in priority order — logout-route → logout-tests → end-to-end → Postman — and drop from the bottom.
+- **Backend logout shipped end-to-end, learning-first.** Walked through the four logout questions before writing code (where `sid` comes from, what logout actually does on the server, no-cookie handling, why also `res.clearCookie`). Wrote `POST /api/auth/logout` right after `/login` in `src/routes/auth.ts`: reads `req.cookies?.sid`, returns 200 with `{ ok: true }` if missing, otherwise `DELETE FROM sessions WHERE id = $1` and `res.clearCookie('sid', { path: '/' })`. Idempotent — logging out when not logged in is success, not an error.
+- **Three logout tests added**, all green. (1) Logout with no cookie → 200 no-op (simplest case, written in the same plain-`request(app)` style as existing tests). (2) Register → logout → `/me` returns 401, using `request.agent(app)` to carry cookies between calls. (3) End-to-end: register → `/me` 200 → logout → `/me` 401, proving the whole loop fits together. Walked through what the agent is and why it's needed (plain `request(app)` is a fresh fake browser per call with no cookie memory; `request.agent(app)` is one fake browser that persists cookies across calls — required for any test that walks more than one auth-relevant request).
+- **Postman smoke test deliberately skipped** — Vitest already covers register, login, and logout end-to-end; the muscle-memory tax wasn't worth the time tax this week.
+- **v2 backend now done by the TODO's own definition of done.** All four auth routes implemented and tested, end-to-end test passing, all changes committed and pushed on `flowlist-v2` in three commits: `feat(auth): POST /api/auth/logout`, `test(auth): logout no-cookie + logout-clears-session`, `test(auth): end-to-end register → me → logout → me-401`.
+- **Started v2 frontend (path A — email greeting) in `flowlist-client/src/App.tsx`.** Locked in the mental model first: `User | null` for auth state, fetch `/me` on mount to see if the cookie is valid, `credentials: 'include'` is the option that actually makes fetch send cookies. Nailed the **useEffect-vs-handler distinction**: time-driven fetches (mount, state change) go in useEffect; user-triggered fetches (form submit, button click) go directly in the event handler. Confirmed with a four-question quick test.
+- **Frontend code added incrementally with line-by-line walkthroughs** for the early pieces:
+  - `User` type below `ClassEvent`.
+  - `const [user, setUser] = useState<User | null>(null);` — talked through `<User | null>` (the generic), why null is the "logged out" sentinel, and the destructuring pattern.
+  - Second `useEffect` calling `GET /api/auth/me` with `credentials: 'include'`. Spent real time on what useEffect *is* (the side-effect escape hatch from React's render loop), why the dep array `[]` means "only on mount," why we wrap async work in an inner `loadUser()` function (useEffect's callback can't be async because its return slot is reserved for cleanup), what `credentials: 'include'` does, why the empty `catch {}` is doing real work (swallows network errors, documents intent), and when components unmount.
+  - Conditional render in the page header: `{user ? <p>Logged in as {user.email}</p> : <p>Not logged in</p>}`. Saved, refreshed, saw "Not logged in" appear — first proof the conditional logic is wired up.
+  - Three new state slots — `email`, `password`, `registerError`.
+  - Replaced the false branch with a register form: controlled `<input>` for email, controlled `<input>` for password, submit button, `{registerError && <p>{registerError}</p>}` slot. The whole form block was copy-pasted at the very end and is **not yet understood line-by-line** — flagged as the very first thing for next session.
 
----
+**Stopped here:** the form renders and inputs are typeable, but **its `onSubmit` is just `(e) => e.preventDefault()`** — clicking Register does nothing yet. No fetch, no logout button. App.tsx grew bigger than felt comfortable; flagged a future polish pass to extract a `RegisterForm` component or a `useAuth` custom hook, but deferred until the loop works (refactoring code you don't yet understand is a recipe for confusion).
 
-**Step 1 — Commit Tuesday's login work (~5 min)**
-
-If not done at end of day Tuesday:
-
-- `feat(auth): POST /api/auth/login with bcrypt.compare + session cookie`
-- `test(auth): login wrong password, no such user, happy path`
-
-Push.
-
----
-
-**Step 2 — Build `POST /api/auth/logout` (~20–30 min, learning-first)**
-
-Before writing code, talk through:
-
-- Where does the session id come from? _(`req.cookies.sid` — the cookie that was set during register/login.)_
-- What does logout actually do on the server? _(Delete the session row so the cookie can no longer be redeemed.)_
-- What if there's no cookie on the request? _(No-op success — logging out when not logged in isn't an error. Return 200.)_
-- Why also `res.clearCookie`? _(So the browser stops sending a stale cookie on future requests.)_
-
-Then write it (right after `router.post('/login', ...)` in `src/routes/auth.ts`, with `try/catch` like the others):
-
-1. Read `req.cookies?.sid`. If missing, return 200 with `{ ok: true }`.
-2. `DELETE FROM sessions WHERE id = $1` — fine if no row matches.
-3. `res.clearCookie('sid', { path: '/' })`.
-4. Return 200 with `{ ok: true }`.
+**Decision banked for tomorrow:** path A tonight (email greeting only), path B tomorrow (collect `full_name` and greet by name).
 
 ---
 
-**Step 3 — Logout tests (~10 min)**
+### Morning session — Thursday, May 7
 
-Two tests in `src/tests/auth.test.ts`:
+**Done:**
+- **Walked through the entire register form code line-by-line** — controlled input pattern, `e.preventDefault()`, the ternary vs `&&` conditional render flavors, `type="submit"` and how the button triggers `onSubmit` via the browser's native form submit behavior, React's synthetic event system, `registerError` state and when it becomes truthy.
+- **Wired `handleRegisterSubmit`** — replaced the `(e) => e.preventDefault()` stub with a real named async function. Handler calls `e.preventDefault()`, clears stale error, fetches `POST /api/auth/register` with `credentials: 'include'` and `Content-Type: application/json`, calls `setUser(data.user)` on 201 or `setRegisterError(data.error)` on failure.
+- **Added logout button** — `handleLogout` fetches `POST /api/auth/logout` with `credentials: 'include'` then calls `setUser(null)`. Button sits next to the "Logged in as X" indicator in the truthy branch of the ternary.
+- **Browser tested the full loop** — registered a new email, indicator flipped to "Logged in as ...", refreshed and stayed logged in, clicked logout and indicator flipped back to form. v2 frontend demo complete.
 
-- Logout with no cookie → 200 (no-op).
-- Register → logout → `GET /api/auth/me` returns 401 (proves the session was actually deleted server-side, not just the cookie cleared).
+**Still uncommitted** — all frontend changes in `flowlist-client/src/App.tsx`. First thing this afternoon: commit + push.
 
-For the second test, use supertest's **agent** to carry cookies between calls:
+---
+
+**Afternoon — clear plan**
+
+**Goal:** commit the morning's work, then add the login form so users who already have an account can sign in.
+
+---
+
+**Step 1 — Commit + push (~5 min)**
 
 ```
-const agent = request.agent(app);
-await agent.post('/api/auth/register').send({ email: testEmail, password: 'password123' });
-await agent.post('/api/auth/logout');
-const me = await agent.get('/api/auth/me');
-expect(me.status).toBe(401);
+feat(client): /me-on-mount + auth-aware page header
+feat(client): register form wired end-to-end with error handling
+feat(client): logout button
 ```
 
-Plain `request(app)` does _not_ carry cookies between calls; `request.agent(app)` does. That's the key difference.
-
 ---
 
-**Step 4 — End-to-end test (~10 min)**
+**Step 2 — Merge `flowlist-v2` into `main` (~5 min)**
 
-One test that walks the full loop in a single agent:
+v2 demo passed all three checks — this is the right moment to merge. Do this in the terminal for both repos:
 
-- Register → 201
-- `GET /me` → 200, returns the user
-- Logout → 200
-- `GET /me` again → 401
-
-When this passes, the v2 backend is done.
-
----
-
-**Step 5 — Postman smoke test of /login + /logout (~5 min, optional)**
-
-Skip if travel is eating the day. Vitest covers everything; this is muscle memory only.
-
----
-
-**Step 6 — Final commits + push (~5 min)**
-
-```
-feat(auth): POST /api/auth/logout
-test(auth): logout no-cookie + logout-clears-session
-test(auth): end-to-end register → me → logout → me-401
+```bash
+git checkout main
+git merge flowlist-v2
+git push
 ```
 
-Then **STOP**. Frontend auth UI is still ahead, but the v2 backend is done. Pick up the frontend after travel with fresh focus.
+Repeat in both `flowlist-api` and `flowlist-client`. After merging, you can keep working on the login form on `main` directly, or create a `flowlist-v3` branch — your call when you get there.
 
 ---
 
-**If energy is left over (optional, in priority order):**
+**Step 3 — Add the login form (~20-30 min, learning-first)**
 
-- Wire `full_name` into register: accept it from `req.body`, include it in the INSERT, return it in the user object. Small known loose end — column already exists nullable.
-- Start the register form in `flowlist-client/src/App.tsx` — just inputs + a submit button calling `fetch('/api/auth/register', { method: 'POST', credentials: 'include', ... })`. No styling.
-- Tighten the login happy-path test by asserting `password_hash` is _not_ in the response body (closes a small coverage gap).
+The login form is near-identical to the register form in structure — same controlled inputs, same `onSubmit` pattern. The differences are small:
+- Calls `POST /api/auth/login` instead of `/register`
+- Expects 200 instead of 201 on success
+- Error message slot is `loginError` instead of `registerError`
+
+Before writing code, think through how to show two forms — register and login — without always showing both at once. Options:
+- A toggle: a `showLogin` boolean state, a "Already have an account? Log in" link that flips it
+- Two separate routes (too early for a router — keep it simple)
+
+The toggle approach is the right call at this scale. Add `const [showLogin, setShowLogin] = useState(false)` and render either the register form or the login form based on that flag, with a small link to switch between them.
+
+New state needed:
+- `loginError` — same pattern as `registerError`
+- `showLogin` — boolean toggle
+
+New handler needed:
+- `handleLoginSubmit` — same shape as `handleRegisterSubmit`, just different URL and status check
+
+**Step 3 — Browser test login (~10 min)**
+
+Log out if logged in. Switch to the login form. Log in with an existing account. Indicator flips. Refresh — still logged in. Logout — back to form.
+
+**Step 4 — Test the duplicate email error (~5 min)**
+
+Switch to register form. Try registering an email that already exists. The `registerError` slot should light up with the server's error message.
 
 **If something blocks you:**
-
-- Read the failure message carefully. Postgres errors usually name the exact column or constraint (the May 4 `full_name` debug is the template).
-- Don't change unrelated code while debugging.
-- Logout is the simplest of the three routes — if it breaks, it's almost certainly cookie reading or DELETE syntax, not anything subtle.
+- Login returning 401 unexpectedly — check that `findUserByEmail` in the backend is selecting `password_hash` (needed for `bcrypt.compare`).
+- Form not switching between register/login — check the `showLogin` toggle and that both forms are in the right branch of the conditional.
 
 ---
 
@@ -224,7 +218,7 @@ Then **STOP**. Frontend auth UI is still ahead, but the v2 backend is done. Pick
 
 ### Backend routes
 
-- [x] `POST /api/auth/register` — hash password (bcrypt), insert user, create session row, set `sid` cookie _(refactored into `validateRegistration` + `createUser` + `createSession` helpers)_
+- [x] `POST /api/auth/register` — hash password (bcrypt), insert user, create session row, set `sid` cookie *(refactored into `validateRegistration` + `createUser` + `createSession` helpers)*
 - [x] `POST /api/auth/login` — verify password (`bcrypt.compare`), create session row, set `sid` cookie. No-leak `401 'invalid credentials'` for both wrong-password and no-such-user. `password_hash` stripped from response body.
 - [x] `POST /api/auth/logout` — delete session row, clear cookie. Reads `req.cookies?.sid`, no-op 200 if missing, otherwise `DELETE FROM sessions WHERE id = $1` and `res.clearCookie('sid', { path: '/' })`.
 - [x] `GET /api/auth/me` — return current user from session, or 401 if no session
@@ -232,12 +226,12 @@ Then **STOP**. Frontend auth UI is still ahead, but the v2 backend is done. Pick
 
 ### Frontend
 
-- [ ] Register form (email + password)
+- [x] Register form (email + password)
 - [ ] Login form (email + password)
-- [ ] Use `fetch(url, { credentials: "include" })` on all auth-relevant calls
-- [ ] On app mount, call `GET /api/auth/me` to determine logged-in state
-- [ ] "Logged in as X" header indicator (with email or name)
-- [ ] Logout button that calls `POST /api/auth/logout` and clears local auth state
+- [x] Use `fetch(url, { credentials: "include" })` on all auth-relevant calls
+- [x] On app mount, call `GET /api/auth/me` to determine logged-in state
+- [x] "Logged in as X" header indicator (with email or name)
+- [x] Logout button that calls `POST /api/auth/logout` and clears local auth state
 
 ### v2 polish (after core auth works)
 
@@ -258,10 +252,10 @@ Then **STOP**. Frontend auth UI is still ahead, but the v2 backend is done. Pick
 
 ### Demo v2
 
-- [ ] Register a new account through the UI
-- [ ] Refresh the page — still logged in
-- [ ] Log out — indicator updates
-- [ ] **STOP. Do not start v3 until this checks pass.**
+- [x] Register a new account through the UI
+- [x] Refresh the page — still logged in
+- [x] Log out — indicator updates
+- [x] **STOP. Do not start v3 until this checks pass.**
 
 ---
 

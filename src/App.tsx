@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 type ClassEvent = {
@@ -82,6 +82,34 @@ function App() {
     return <p>No upcoming classes.</p>;
   }
 
+  async function handleRegisterSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setRegisterError("");
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setUser(data.user);
+    } else {
+      setRegisterError(data.error);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+  }
+
   return (
     <main className="app-shell">
       <header className="page-header">
@@ -91,9 +119,12 @@ function App() {
           Browse the studio schedule and find your next class.
         </p>
         {user ? (
-          <p>Logged in as {user.email}</p>
+          <div>
+            <p>Logged in as {user.email}</p>
+            <button onClick={handleLogout}>Log out</button>
+          </div>
         ) : (
-          <form onSubmit={(e) => e.preventDefault()}>
+          <form onSubmit={handleRegisterSubmit}>
             <input
               type="email"
               placeholder="Email"
