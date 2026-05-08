@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type SubmitEvent } from "react";
 import "./App.css";
 
 type ClassEvent = {
@@ -90,7 +90,7 @@ function App() {
 
   //hander functions run only when the user does something - clicks a button, submits a form, types in a field etc...
 
-  async function handleRegisterSubmit(e: SubmitEvent) {
+  async function handleRegisterSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setRegisterError("");
 
@@ -118,9 +118,9 @@ function App() {
     setUser(null);
   }
 
-  async function handleLoginSubmit(e: SubmitEvent) {
+  async function handleLoginSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    setRegisterError("");
+    setLoginError("");
 
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -143,17 +143,16 @@ function App() {
       <header className="page-header">
         <p className="eyebrow">FlowList</p>
         <h1>Upcoming Classes</h1>
-        <p className="intro">
-          Browse the studio schedule and find your next class.
-        </p>
+        <p className="intro">Browse upcoming classes and book your spot.</p>
         {user ? (
           <div>
             <p>Logged in as {user.email}</p>
             <button onClick={handleLogout}>Log out</button>
           </div>
-        ) : (
-          <form onSubmit={handleRegisterSubmit}>
+        ) : showLogin ? (
+          <form className="auth-form" onSubmit={handleLoginSubmit}>
             <input
+              className="auth-input"
               type="email"
               placeholder="Email"
               value={email}
@@ -161,14 +160,60 @@ function App() {
               required
             />
             <input
+              className="auth-input"
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button type="submit">Register</button>
-            {registerError && <p>{registerError}</p>}
+            <button className="auth-btn" type="submit">
+              Log in
+            </button>
+            {loginError && <p className="auth-error">{loginError}</p>}
+            <p className="auth-toggle">
+              Don't have an account?{" "}
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => setShowLogin(false)}
+              >
+                Register
+              </button>
+            </p>
+          </form>
+        ) : (
+          <form className="auth-form" onSubmit={handleRegisterSubmit}>
+            <input
+              className="auth-input"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              className="auth-input"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button className="auth-btn" type="submit">
+              Register
+            </button>
+            {registerError && <p className="auth-error">{registerError}</p>}
+            <p className="auth-toggle">
+              Already have an account?{" "}
+              <button
+                className="auth-btn"
+                type="button"
+                onClick={() => setShowLogin(true)}
+              >
+                Log in
+              </button>
+            </p>
           </form>
         )}
       </header>

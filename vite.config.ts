@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
+    allowedHosts: ['snowdrop-dictate-spud.ngrok-free.dev'],
     proxy: {
       '/api' : 'http://localhost:3000',
     },
