@@ -1,11 +1,11 @@
 # TODO
 
-Single source of truth for what's left on FlowList. Covers both repos. Keep this file identical in `flowlist-api` and `flowlist-client` — when you check something off in one, mirror it in the other.
+Single source of truth for what's left on FlowList. Covers both repos. Keep this file identical in `flowlist-api` and `flowlist-client` — when you check something off in one, mirror it in the other. We need to update more here.
 
 ## Status
 
-**Today:** Thursday, May 7, 2026
-**MVP target:** ~Saturday, May 9, 2026
+**Today:** Saturday, May 9, 2026
+**MVP target:** ~Saturday, May 9, 2026 ✅ presentation day
 **Travel:** mid-week, 2–3 working days lost. Plan accordingly — front-load v1 this weekend, push v2 immediately after, save the demo polish for the end of the week.
 
 **The staging rule still wins.** If a v2 task feels tempting before v1 is demo-done in the browser, stop. The whole point of staging is that "almost done" doesn't count.
@@ -69,14 +69,22 @@ Single source of truth for what's left on FlowList. Covers both repos. Keep this
 ### Evening session — Thursday, May 7
 
 **Done:**
-- **Merged `flowlist-v2` into `main`** in both repos — clean merge, no conflicts. Learned `--no-ff`, what fast-forward means, and why merge commits tell a better history story.
-- **Login form shipped** — added `loginError` and `showLogin` state, `handleLoginSubmit` handler, and a chained ternary toggle between register and login forms. Learned about React 19's deprecation of `FormEvent` in favour of `SubmitEvent<HTMLFormElement>`, and the `verbatimModuleSyntax` tsconfig requirement for `import type`.
-- **Duplicate email error handled properly** — instead of leaking a raw Postgres constraint error, the register route now calls `findUserByEmail` first and returns a clean `400` if the email is already taken.
-- **Browser tested the full auth loop** — register, login, toggle between forms, duplicate email error, refresh stays logged in, logout returns to form. All working.
-- **UI styling pass** — added Cormorant Garamond + Jost via Google Fonts, updated favicon to 🌱 emoji, changed page title to FlowList, styled auth form with `.auth-form`, `.auth-input`, `.auth-btn`, `.auth-error`, `.auth-toggle` classes, centered the header, added eyebrow line decoration, warmed up the card layout, constrained class list width with side border lines.
-- **ngrok set up** for presentation day — `ngrok http 5173` tunnels the local dev server to a public URL. Instructions saved in TODO under "Presentation Day Setup."
+- **Merged `flowlist-v2` into `main`** in both repos — clean merge, no conflicts.
+- **Duplicate email error handled properly** in `POST /api/auth/register` — added a `findUserByEmail` check before the INSERT so duplicate emails return a clean `400` instead of leaking a raw Postgres constraint error.
+- **Login form shipped on the frontend** — toggle between register and login working end-to-end, browser tested.
+- **Full UI styling pass** on the frontend — Cormorant Garamond + Jost fonts, auth form styling, class card layout improvements, ngrok set up for presentation day.
+- **Still on `flowlist-v2`** — final merge to `main` planned for end of Saturday session.
 
-**Still on `flowlist-v2`** — all tonight's work is committed and pushed to `flowlist-v2`. Final merge to `main` planned for end of Saturday session.
+---
+
+### Presentation day — Saturday, May 9
+
+**Done:**
+- **Seeded full week's class schedule in Supabase** — 3 classes/day Mon–Fri (Vinyasa Flow, Hatha, Yin Yoga at their set UTC times), 1 Hatha class/day Sat–Sun. Learned SQL `UPDATE` to rename instructors (Maya Chen → Kanami Anderson, David Okafor → David Sharma, Priya Sharma → Kameko Shibata) and `INSERT` with subquery pattern for `template_id` lookup. Reinforced UTC timezone rule — times stored in UTC, client localizes automatically via `toLocaleString`.
+- **v2 polish shipped — `full_name` wired end-to-end.** Backend: added `full_name: string | null` parameter to `createUser` (INSERT + RETURNING), added `full_name` to `findUserByEmail` SELECT, added `full_name` to `requireSession` middleware query and `res.locals.user` object, extracted `full_name` from `req.body` in the register route handler. Frontend: added `fullName` state, optional full name input on register form, `full_name: fullName` in the fetch body (key/value explicit mapping because state name differs from API field name), `user.full_name ?? user.email` fallback in the greeting. Debugged null `full_name` by adding `console.log` before fetch — confirmed frontend was sending correctly, issue was API server hadn't picked up changes; fixed by restarting the server.
+- **"Book your spot" button added to each class card** — no-op for now, wired to v3. Styled as `.book-btn` with `width: fit-content` and `margin: 8px auto` to prevent full-width stretch on desktop.
+- **Greeting styling pass** — `.greeting` class with Cormorant Garamond, `font-weight: 500`, teal color (`#2f7d6d`) to match the FlowList eyebrow. Debugged duplicate `.page-header h1` rule that was overriding `font-weight`.
+- **Merged `flowlist-v2` into `main`** in both repos — clean merge, pushed to GitHub.
 
 ---
 
@@ -185,7 +193,7 @@ Single source of truth for what's left on FlowList. Covers both repos. Keep this
 
 ### v2 polish (after core auth works)
 
-- [ ] Wire `full_name` into the register flow and the UI so the studio can greet students by name. The column already exists on `users` (nullable) — this is a code change only, not a schema change. Steps: accept `full_name` from `req.body` in `POST /api/auth/register`, include it in the INSERT, surface it in the "Logged in as X" indicator.
+- [x] Wire `full_name` into the register flow and the UI so the studio can greet students by name. The column already exists on `users` (nullable) — this is a code change only, not a schema change. Steps: accept `full_name` from `req.body` in `POST /api/auth/register`, include it in the INSERT, surface it in the "Logged in as X" indicator.
 
 ### Tests (Vitest + Supertest, in the API repo)
 
@@ -263,35 +271,6 @@ Small additions that fit in a few hours each. Anything bigger lives in `PROJECT_
 - [ ] Filter classes by instructor (only if the seeded data has enough variety to make it interesting)
 - [ ] "Today" / "This week" / "Later" sections in the schedule
 - [ ] Disable past classes in the UI (don't render at all, or grey out)
-
----
-
-## Presentation Day Setup (Saturday, May 9)
-
-To share the app with your Zoom audience on their phones, follow these steps in order:
-
-**1. Start the API server**
-```bash
-cd ~/dev/flowlist-api
-npm run dev
-```
-
-**2. Start the Vite dev server**
-```bash
-cd ~/dev/flowlist-client
-npm run dev
-```
-
-**3. Start ngrok**
-```bash
-ngrok http 5173
-```
-
-**4. Copy the ngrok URL** — it looks like `https://something-something-something.ngrok-free.dev`
-
-**5. Paste it in the Zoom chat** so attendees can open it on their phones.
-
-Note: the ngrok URL changes every time you restart it, so start it once and leave it running for the whole presentation.
 
 ---
 

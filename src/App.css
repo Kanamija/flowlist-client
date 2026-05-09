@@ -236,3 +236,12 @@
   font-size: 1.3rem;
   color: #2f7d6d;
 }
+
+.page-footer {
+  margin-top: 30px;
+  color: #68716d;
+  font-size: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

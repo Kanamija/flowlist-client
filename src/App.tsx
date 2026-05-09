@@ -249,10 +249,13 @@ function App() {
             </p>
 
             <p className="class-meta">{cls.duration_minutes} min</p>
-            <button className="book-btn">Book your spot</button>
+            {user && <button className="book-btn">Book your spot</button>}
           </article>
         ))}
       </section>
+      <footer className="page-footer">
+        <p>Powered by FlowList</p>
+      </footer>
     </main>
   );
 }
