@@ -18,6 +18,7 @@ type User = {
   email: string;
   role: string;
   created_at: string;
+  full_name: string | null;
 };
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [loginError, setLoginError] = useState("");
   const [showLogin, setShowLogin] = useState(false);
@@ -94,11 +96,13 @@ function App() {
     e.preventDefault();
     setRegisterError("");
 
+    console.log("sending:", { email, password, full_name: fullName });
+
     const res = await fetch("/api/auth/register", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, full_name: fullName }),
     });
 
     const data = await res.json();
@@ -143,10 +147,12 @@ function App() {
       <header className="page-header">
         <p className="eyebrow">FlowList</p>
         <h1>Upcoming Classes</h1>
-        <p className="intro">Browse upcoming classes and book your spot.</p>
+        <p className="intro">Browse our schedule and book your spot.</p>
         {user ? (
           <div>
-            <p>Logged in as {user.email}</p>
+            <p className="greeting">
+              Nice to see you, {user.full_name ?? user.email} 🌿
+            </p>
             <button onClick={handleLogout}>Log out</button>
           </div>
         ) : showLogin ? (
@@ -194,6 +200,13 @@ function App() {
             />
             <input
               className="auth-input"
+              type="text"
+              placeholder="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            <input
+              className="auth-input"
               type="password"
               placeholder="Password"
               value={password}
@@ -236,6 +249,7 @@ function App() {
             </p>
 
             <p className="class-meta">{cls.duration_minutes} min</p>
+            <button className="book-btn">Book your spot</button>
           </article>
         ))}
       </section>

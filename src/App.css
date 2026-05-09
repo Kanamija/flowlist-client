@@ -54,7 +54,7 @@
 
 .intro {
   margin-top: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
   color: #39433f;
   font-size: 1.1rem;
 }
@@ -210,4 +210,29 @@
 
 .auth-toggle button:hover {
   text-decoration: underline;
+}
+
+.book-btn {
+  padding: 10px 14px;
+  background: #2f7d6d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+  margin: 8px auto;
+}
+
+.book-btn:hover {
+  background: #256358;
+}
+
+.greeting {
+  margin-bottom: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 1.3rem;
+  color: #2f7d6d;
 }
