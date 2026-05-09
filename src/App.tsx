@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, type SubmitEvent } from "react";
 import "./App.css";
 
 type ClassEvent = {
@@ -18,6 +18,7 @@ type User = {
   email: string;
   role: string;
   created_at: string;
+  full_name: string | null;
 };
 
 function App() {
@@ -27,7 +28,14 @@ function App() {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [registerError, setRegisterError] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+
+  //useEffect runs automatically in response to something changing
+  //loadClasses loads classes when the page first opens
+  //loadUser checks if the user is already logged in
 
   useEffect(() => {
     async function loadClasses() {
@@ -82,15 +90,19 @@ function App() {
     return <p>No upcoming classes.</p>;
   }
 
-  async function handleRegisterSubmit(e: React.FormEvent) {
+  //hander functions run only when the user does something - clicks a button, submits a form, types in a field etc...
+
+  async function handleRegisterSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setRegisterError("");
+
+    console.log("sending:", { email, password, full_name: fullName });
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, full_name: fullName }),
     });
 
     const data = await res.json();
@@ -110,22 +122,43 @@ function App() {
     setUser(null);
   }
 
+  async function handleLoginSubmit(e: SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoginError("");
+
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setUser(data.user);
+    } else {
+      setLoginError(data.error);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="page-header">
         <p className="eyebrow">FlowList</p>
         <h1>Upcoming Classes</h1>
-        <p className="intro">
-          Browse the studio schedule and find your next class.
-        </p>
+        <p className="intro">Browse our schedule and book your spot.</p>
         {user ? (
           <div>
-            <p>Logged in as {user.email}</p>
+            <p className="greeting">
+              Nice to see you, {user.full_name ?? user.email} 🌿
+            </p>
             <button onClick={handleLogout}>Log out</button>
           </div>
-        ) : (
-          <form onSubmit={handleRegisterSubmit}>
+        ) : showLogin ? (
+          <form className="auth-form" onSubmit={handleLoginSubmit}>
             <input
+              className="auth-input"
               type="email"
               placeholder="Email"
               value={email}
@@ -133,14 +166,67 @@ function App() {
               required
             />
             <input
+              className="auth-input"
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button type="submit">Register</button>
-            {registerError && <p>{registerError}</p>}
+            <button className="auth-btn" type="submit">
+              Log in
+            </button>
+            {loginError && <p className="auth-error">{loginError}</p>}
+            <p className="auth-toggle">
+              Don't have an account?{" "}
+              <button
+                className="auth-button"
+                type="button"
+                onClick={() => setShowLogin(false)}
+              >
+                Register
+              </button>
+            </p>
+          </form>
+        ) : (
+          <form className="auth-form" onSubmit={handleRegisterSubmit}>
+            <input
+              className="auth-input"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              className="auth-input"
+              type="text"
+              placeholder="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            <input
+              className="auth-input"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button className="auth-btn" type="submit">
+              Register
+            </button>
+            {registerError && <p className="auth-error">{registerError}</p>}
+            <p className="auth-toggle">
+              Already have an account?{" "}
+              <button
+                className="auth-btn"
+                type="button"
+                onClick={() => setShowLogin(true)}
+              >
+                Log in
+              </button>
+            </p>
           </form>
         )}
       </header>
@@ -163,6 +249,7 @@ function App() {
             </p>
 
             <p className="class-meta">{cls.duration_minutes} min</p>
+            <button className="book-btn">Book your spot</button>
           </article>
         ))}
       </section>
